@@ -29,12 +29,37 @@ document.addEventListener("DOMContentLoaded", () => {
           <p><strong>Participants (${details.participants.length}):</strong></p>
         `;
 
-        // Create participants list
+        // Create participants list with delete icon
         const participantsList = document.createElement("ul");
         participantsList.className = "participants";
         details.participants.forEach(email => {
           const li = document.createElement("li");
           li.textContent = email;
+
+          // 削除アイコン追加
+          const deleteIcon = document.createElement("span");
+          deleteIcon.className = "delete-icon";
+          deleteIcon.innerHTML = "&#128465;"; // ゴミ箱アイコン Unicode
+          deleteIcon.title = "Unregister participant";
+          deleteIcon.onclick = async () => {
+            if (confirm(`${email} をこの活動から削除しますか？`)) {
+              try {
+                const response = await fetch(
+                  `/activities/${encodeURIComponent(name)}/unregister?email=${encodeURIComponent(email)}`,
+                  { method: "POST" }
+                );
+                const result = await response.json();
+                if (response.ok) {
+                  fetchActivities();
+                } else {
+                  alert(result.detail || "削除に失敗しました");
+                }
+              } catch (error) {
+                alert("削除リクエストに失敗しました");
+              }
+            }
+          };
+          li.appendChild(deleteIcon);
           participantsList.appendChild(li);
         });
 
