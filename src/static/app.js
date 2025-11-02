@@ -72,13 +72,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (response.ok) {
         messageDiv.textContent = result.message;
-        messageDiv.className = "message success";
+        messageDiv.className = "success";
         signupForm.reset();
         // Refresh activities to show updated participants and availability
         fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
-        messageDiv.className = "message error";
+        messageDiv.className = "error";
       }
 
       messageDiv.classList.remove("hidden");
