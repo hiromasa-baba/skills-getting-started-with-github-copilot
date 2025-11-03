@@ -4,14 +4,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
 
-  // Function to fetch activities from API
+  // Modified: fetch activities from API, clear previous options, and show participants list
   async function fetchActivities() {
     try {
       const response = await fetch("/activities");
       const activities = await response.json();
 
-      // Clear loading message
+      // Clear loading message and previous options
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
@@ -25,8 +26,44 @@ document.addEventListener("DOMContentLoaded", () => {
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <p><strong>Participants (${details.participants.length}):</strong></p>
         `;
 
+        // Create participants list with delete icon
+        const participantsList = document.createElement("ul");
+        participantsList.className = "participants";
+        details.participants.forEach(email => {
+          const li = document.createElement("li");
+          li.textContent = email;
+
+          // 削除アイコン追加
+          const deleteIcon = document.createElement("span");
+          deleteIcon.className = "delete-icon";
+          deleteIcon.innerHTML = "&#128465;"; // ゴミ箱アイコン Unicode
+          deleteIcon.title = "Unregister participant";
+          deleteIcon.onclick = async () => {
+            if (confirm(`${email} をこの活動から削除しますか？`)) {
+              try {
+                const response = await fetch(
+                  `/activities/${encodeURIComponent(name)}/unregister?email=${encodeURIComponent(email)}`,
+                  { method: "POST" }
+                );
+                const result = await response.json();
+                if (response.ok) {
+                  fetchActivities();
+                } else {
+                  alert(result.detail || "削除に失敗しました");
+                }
+              } catch (error) {
+                alert("削除リクエストに失敗しました");
+              }
+            }
+          };
+          li.appendChild(deleteIcon);
+          participantsList.appendChild(li);
+        });
+
+        activityCard.appendChild(participantsList);
         activitiesList.appendChild(activityCard);
 
         // Add option to select dropdown
@@ -41,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Handle form submission
+  // When signing up, show messages with 'message' class and refresh activities on success
   signupForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -62,6 +99,8 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        // Refresh activities to show updated participants and availability
+        fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
@@ -75,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }, 5000);
     } catch (error) {
       messageDiv.textContent = "Failed to sign up. Please try again.";
-      messageDiv.className = "error";
+      messageDiv.className = "message error";
       messageDiv.classList.remove("hidden");
       console.error("Error signing up:", error);
     }
